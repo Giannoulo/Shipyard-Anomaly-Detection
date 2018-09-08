@@ -31,10 +31,17 @@ conf = SparkConf().setAppName('Shipyard')
 spark = SparkSession.builder.config(conf=conf).getOrCreate()
 
 #Read the input data to a dataframe
-ais_data = spark.read.format("csv").option("header", "true").option("inferSchema", "true").load('hdfs://Master1/user/nari_dynamic.csv')
+ais_data = spark.read.format("csv")\
+    .option("header", "true")\
+    .option("inferSchema", "true")\
+    .load('hdfs://Master1/user/nari_dynamic.csv')
 
 #Read the ports csv, turn it to a list of tuples and broadcast it to the workers
-ports_df = spark.read.format("csv").option("header", "true").option("inferSchema", "true").load('hdfs://Master1/user/ports.csv')
+ports_df = spark.read.format("csv")\
+    .option("header", "true")\
+    .option("inferSchema", "true")\
+    .load('hdfs://Master1/user/ports.csv')
+
 port_tuples = [tuple(x) for x in ports_df.collect()]
 br_ports = spark.sparkContext.broadcast(port_tuples)
 
@@ -45,7 +52,7 @@ port_visitors = ais_data.rdd.flatMap(port_visit)
 unique_visitors = port_visitors.reduceByKey(lambda a, b : a+b)
 
 #Save to a text file
-unique_visitors.coalesce(1).saveAsTextFile('~/Downloads/unique_visitors.txt')
+unique_visitors.coalesce(1).saveAsTextFile('/unique_visitors')
 
 spark.stop()
 

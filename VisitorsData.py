@@ -32,6 +32,7 @@ def docked(row):
 
 
 
+#Format the Row elements of the RDD to list of lists
 def pretty(row):
 
     pretty_mmsi = row['sourcemmsi']
@@ -43,7 +44,22 @@ def pretty(row):
                         , row['collect_list(struct)'][i]['t']\
                         ,row['collect_list(struct)'][i]['docked']])
 
-    return [row_list]
+    return [row_list] #In a list because it will get flatten
+
+
+
+def trips(list):
+
+    trip = []
+    trip_list = []
+    list.sort(key=lambda point: point[3])#Sort the list by timestamp
+
+    for i in range(0, len(list)):
+        if list[i][4] == 1:
+            trip_start= list[i]
+
+
+
 
 
 
@@ -57,7 +73,7 @@ spark = SparkSession.builder.config(conf=conf).getOrCreate()
 ais_data = spark.read.format("csv")\
     .option("header", "true")\
     .option("inferSchema", "true")\
-    .load('file:///C:\\Users\\SinQ\\PycharmProjects\\shipyard\\nari_dynamic_1million.csv')\
+    .load('hdfs://Master1/user/nari_dynamic.csv')\
     .repartition(50)
 
 
@@ -66,7 +82,7 @@ ais_data = spark.read.format("csv")\
 ports_df = spark.read.format("csv")\
     .option("header", "true")\
     .option("inferSchema", "true")\
-    .load('file:///C:\\Users\\SinQ\\PycharmProjects\\shipyard\\ports.csv')
+    .load('hdfs://Master1/user/ports.csv')
 
 port_tuples = [tuple(x) for x in ports_df.collect()]
 br_ports = spark.sparkContext.broadcast(port_tuples)
@@ -75,7 +91,7 @@ br_ports = spark.sparkContext.broadcast(port_tuples)
 
 #Read the visitors file turn it to a list and broadcast it to the workers
 visitors = spark.read.format('text')\
-    .load('file:///C:\\Users\\SinQ\\PycharmProjects\\shipyard\\visitors')
+    .load('hdfs://Master1/user/visitors')
 
 
 #Keep only the mmsi with more than one port visit
@@ -103,8 +119,10 @@ grouped_mmsi = spark.createDataFrame(visitor_docked_data)\
     .agg(sf.collect_list("struct"))
 
 
-grouped_mmsi.rdd.flatMap(pretty).coalesce(1).saveAsTextFile('file:///C:\\Users\\SinQ\\PycharmProjects\\shipyard\\visitor_pretty_new')
-# grouped_mmsi.rdd.coalesce(1).saveAsTextFile('C:\\Users\\SinQ\\PycharmProjects\\shipyard\\visitor_data')
+#Format the Rdd to lists of lists and split into trips
+tripsRDD = grouped_mmsi.rdd.flatMap(pretty).flatMap(trips)
+
+    .coalesce(3).saveAsTextFile('hdfs://Master1/user/visitor_')
 
 spark.stop()
 
