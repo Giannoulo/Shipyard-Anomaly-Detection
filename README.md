@@ -25,5 +25,5 @@ All the data for 1km port radius. Green is for pings inside a trip, yellow for t
 
 
 
-For radius of 1km from a port and delay between pings  3hr < delay < 1hr:
+For radius of 1km from a port and delay between pings  3hr > delay > 1hr:
 ![Red pings](https://github.com/Giannoulo/Shipyard-Anomaly-Detection/blob/master/turnoff.PNG "Anomalies")
